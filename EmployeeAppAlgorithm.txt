@@ -1,0 +1,63 @@
+Initialize the React App
+
+Use create-react-app to set up the project.
+Install styled-components and react-router-dom if not already included.
+Define the App Component
+
+State Initialization:
+employees: to store the list of employees.
+searchQuery: to store the search query for filtering employees.
+useEffect Hook:
+Load employees from localStorage when the component mounts.
+Functions:
+loadEmployeesFromLocalStorage:
+Fetch employees from localStorage and set the employees state.
+addEmployee(newEmployee):
+Add the new employee to the employees state.
+Update localStorage with the new list of employees.
+updateEmployee(updatedEmployee):
+Find the employee by ID and update their details.
+Update localStorage with the updated list of employees.
+deleteEmployee(employeeId):
+Remove the employee by ID from the employees state.
+Update localStorage with the updated list of employees.
+filterEmployees(query):
+Filter the employees based on the query.
+Update the employees state with the filtered results.
+Render:
+Header component.
+SearchBar component with onSearch prop.
+EmployeeList component with employees prop.
+EmployeeForm component with onAdd, onUpdate, and employee props.
+Footer component.
+Define the Header Component
+
+Return the application title.
+Define the EmployeeList Component
+
+Props: employees.
+Map through the employees and render an EmployeeCard for each employee.
+Define the EmployeeCard Component
+
+Props: employee, onDelete, onUpdate.
+Display employee details.
+Render an update button that triggers onUpdate with the employee data.
+Render a delete button that triggers onDelete with the employee ID.
+Define the EmployeeForm Component
+
+Props: onAdd, onUpdate, employee (for editing).
+Create form inputs for name, surname, email, position, department, phone, image, and start date.
+Render a submit button that triggers onAdd or onUpdate based on whether the employee prop is present.
+Define the SearchBar Component
+
+Props: onSearch.
+Create an input field for the search query.
+Call onSearch with the input value on change.
+Define the Footer Component
+
+Return footer information.
+Run the Application
+
+Ensure all components are correctly imported and rendered.
+Verify that the app functions as expected: adding, updating, deleting, and filtering employees.
+Check that data persists correctly in localStorage.
