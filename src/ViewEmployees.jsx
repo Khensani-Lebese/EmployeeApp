@@ -20,7 +20,7 @@ const ViewEmployees = () => {
   return (
     <Container>
       <h2>View Employees</h2>
-      <EmployeeList employees={employees} onDelete={deleteEmployee} />
+      <EmployeeList employees={employees}  />
     </Container>
   );
 };

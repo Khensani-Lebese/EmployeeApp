@@ -1,18 +1,30 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 
 const EmployeeForm = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
+    age: '',
+    idNumber: '',
+    role: '',
     email: '',
     position: '',
     department: '',
     phone: '',
     startDate: '',
-    picture: ''
+    photo: null,
   });
+  useEffect(() => {
+    const form = new FormData();
+    form.append('name', 'Vee')
+    form.append('age', 40)
+    console.log(form);
 
+
+    
+  }, [])
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -20,31 +32,63 @@ const EmployeeForm = ({ onSubmit }) => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      setFormData({ ...formData, picture: reader.result });
-    };
-
+  
     if (file) {
-      reader.readAsDataURL(file);
+      setFormData({ ...formData, photo: file }); // Store the file object
     }
   };
+  
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    setFormData({
-      name: '',
-      surname: '',
-      email: '',
-      position: '',
-      department: '',
-      phone: '',
-      startDate: '',
-      picture: ''
-    });
-  };
+    console.log(formData);
+    
+    try {
+      const data = new FormData();
+      data.append('name', formData.name);
+      data.append('surname', formData.surname);
+      data.append('age', formData.age);
+      data.append('idNumber', formData.idNumber);
+      data.append('role', formData.role);
+      data.append('email', formData.email);
+      data.append('position', formData.position);
+      data.append('department', formData.department);
+      data.append('phone', formData.phone);
+      data.append('startDate', formData.startDate);
+      data.append('photo', formData.photo);
+      console.log(formData);  // Attach the photo
+
+      // Make API call to add the employee
+      const response = await axios.post('http://localhost:5000/employees/add', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.status === 201) {
+        alert('Employee has been added successfully!');
+        
+        // Reset form fields
+        setFormData({
+          name: '',
+          surname: '',
+          age: '',
+          idNumber: '',
+          role: '',
+          email: '',
+          position: '',
+          department: '',
+          phone: '',
+          startDate: '',
+          photo: null,
+        });
+      }
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      alert('Error adding employee, please try again.');
+    }
+};
+
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -57,8 +101,20 @@ const EmployeeForm = ({ onSubmit }) => {
         <Input type="text" name="surname" value={formData.surname} onChange={handleChange} />
       </Label>
       <Label>
+        Age:
+        <Input type="text" name="age" value={formData.age} onChange={handleChange} />
+      </Label>
+      <Label>
+        Identity Number:
+        <Input type="number" name="idNumber" value={formData.idNumber} onChange={handleChange} />
+      </Label>
+      <Label>
         Email:
         <Input type="email" name="email" value={formData.email} onChange={handleChange} />
+      </Label>
+      <Label>
+        Role:
+        <Input type="text" name="role" value={formData.role} onChange={handleChange} />
       </Label>
       <Label>
         Position:
@@ -80,7 +136,7 @@ const EmployeeForm = ({ onSubmit }) => {
         Picture:
         <Input type="file" accept="image/*" onChange={handleImageChange} />
       </Label>
-      {formData.picture && <ImagePreview src={formData.picture} alt="Employee Preview" />}
+      {formData.photo && <ImagePreview src={formData.photo} alt="Employee Preview" />}
       <Button type="submit">Add Employee</Button>
     </Form>
   );
