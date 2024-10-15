@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
- </head>
+    </head>
 <body>
 
 <h1>Employee App</h1>
@@ -27,7 +27,7 @@
     <li>React</li>
     <li>Node.js</li>
     <li>Express</li>
-    <li>MongoDB (or other database)</li>
+    <li>Firebase</li>
     <li>Git</li>
     <li>npm (Node Package Manager)</li>
 </ul>
@@ -71,10 +71,15 @@
 <h2 id="environment-variables">Environment Variables</h2>
 <p>You need to set up some environment variables for your application to run correctly. Create a <code>.env</code> file in the <code>server</code> directory and add the following variables:</p>
 <pre><code>
-DATABASE_URL=mongodb://your_database_url_here
-GOOGLE_SERVICE_ACCOUNT_KEY=your_service_account_key_here
+FIREBASE_API_KEY=your_firebase_api_key_here
+FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain_here
+FIREBASE_DATABASE_URL=your_firebase_database_url_here
+FIREBASE_PROJECT_ID=your_firebase_project_id_here
+FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket_here
+FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id_here
+FIREBASE_APP_ID=your_firebase_app_id_here
 </code></pre>
-<p>Make sure to replace the placeholders with your actual database URL and Google Service Account Key.</p>
+<p>Make sure to replace the placeholders with your actual Firebase configuration details.</p>
 
 <h2 id="usage">Usage</h2>
 <p>Once both the client and server are running, you can access the Employee App in your web browser at <code>http://localhost:3000</code>.</p>
