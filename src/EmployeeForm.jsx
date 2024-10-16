@@ -59,7 +59,7 @@ const EmployeeForm = ({ onSubmit }) => {
       console.log(formData);  // Attach the photo
 
       // Make API call to add the employee
-      const response = await axios.post('http://localhost:5000/employees/add', data, {
+      const response = await axios.post('http://localhost:3000/employees/add', data, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

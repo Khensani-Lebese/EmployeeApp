@@ -6,7 +6,7 @@ const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/employees')
+    axios.get('http://localhost:3000/employees')
       .then(response => {
         setEmployees(response.data);
       })

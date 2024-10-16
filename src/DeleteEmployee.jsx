@@ -24,7 +24,7 @@ const DeleteEmployee = () => {
     // Fetch employees from the server on component mount
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('http://localhost:5000/employees');
+        const response = await fetch('http://localhost:3000/employees');
         const data = await response.json();
         setEmployees(data);
       } catch (error) {
@@ -37,7 +37,7 @@ const DeleteEmployee = () => {
 
   const deleteEmployee = async (employeeId) => {
     try {
-      const response = await fetch(`http://localhost:5000/employees/delete/${employeeId}`, {
+      const response = await fetch(`http://localhost:3000/employees/delete/${employeeId}`, {
         method: 'DELETE',
       });
 
@@ -77,7 +77,7 @@ const DeleteEmployee = () => {
 
   const saveEditedEmployee = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/employees/update/${editingEmployee.id}`, {
+      const response = await fetch(`http://localhost:3000/employees/update/${editingEmployee.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

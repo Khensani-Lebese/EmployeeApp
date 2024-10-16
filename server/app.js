@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config(); 
+
 import express from 'express';
 import cors from 'cors';
 import multer, { memoryStorage } from 'multer';
@@ -5,7 +8,9 @@ import { extname } from 'path';
 import { readFileSync } from 'fs';
 import bodyParserPkg from 'body-parser';
 import admin from 'firebase-admin';
-require('dotenv').config(); // Load environment variables
+
+import fs from 'fs';
+import path from 'path';
 
 const { json, urlencoded } = bodyParserPkg;
 const upload = multer({ dest: 'uploads/' }); 
@@ -21,9 +26,14 @@ app.use(urlencoded({ extended: true }));
 // Load Firebase credentials and storage bucket from .env
 const serviceAccountPath = process.env.FIREBASE_CREDENTIALS;
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+console.log('Firebase Credentials Path:', process.env.FIREBASE_CREDENTIALS);
+console.log('Firebase Storage Bucket:', process.env.FIREBASE_STORAGE_BUCKET);
+
+
 
 // Read and parse the JSON service account key
 const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+console.log('Firebase Credentials Path:', serviceAccountPath);
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -73,7 +83,7 @@ app.post('/employees/add', upload.single('photo'), async (req, res) => {
         department,
         phone,
         startDate,
-        photoUrl,
+       photo: photoUrl,
       });
 
       return res.status(201).json({ message: 'Employee added successfully' });
@@ -177,7 +187,7 @@ app.put('/employees/update/:id', upload.single('photo'), async (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
