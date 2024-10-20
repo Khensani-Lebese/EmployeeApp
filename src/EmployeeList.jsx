@@ -6,14 +6,11 @@ const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:3000/employees')
-      .then(response => {
-        setEmployees(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching employees:', error);
-      });
+    axios.get('http://localhost:3001/employees')
+      .then(response => setEmployees(response.data))
+      .catch(error => console.error('Error fetching employees:', error));
   }, []);
+  
 
   return (
     <List>

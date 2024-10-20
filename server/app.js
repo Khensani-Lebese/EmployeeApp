@@ -1,62 +1,112 @@
 import dotenv from 'dotenv';
-dotenv.config(); 
+dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import multer, { memoryStorage } from 'multer';
+import multer from 'multer';
 import { extname } from 'path';
 import { readFileSync } from 'fs';
-import bodyParserPkg from 'body-parser';
 import admin from 'firebase-admin';
+import session from 'express-session';
+import bodyParser from 'body-parser'; 
+import { verifyToken } from './verifyToken.js';
 
-import fs from 'fs';
-import path from 'path';
+// Initialize Firebase Admin SDK
+const serviceAccount = JSON.parse(readFileSync(process.env.FIREBASE_CREDENTIALS, 'utf8'));
+const { json, urlencoded } = bodyParser;
 
-const { json, urlencoded } = bodyParserPkg;
-const upload = multer({ dest: 'uploads/' }); 
 
-// Initialize Express app
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+});
+
+const db = admin.firestore();
+const bucket = admin.storage().bucket();
+const auth = admin.auth();
+app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
+// Initialize Express App
 const app = express();
+
+// Multer Configuration (Memory Storage)
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware
 app.use(cors());
 app.use(json());
 app.use(urlencoded({ extended: true }));
 
-// Load Firebase credentials and storage bucket from .env
-const serviceAccountPath = process.env.FIREBASE_CREDENTIALS;
-const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
-console.log('Firebase Credentials Path:', process.env.FIREBASE_CREDENTIALS);
-console.log('Firebase Storage Bucket:', process.env.FIREBASE_STORAGE_BUCKET);
+// Session Configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    httpOnly: true, 
+    cookie: { maxAge: 5 * 60 * 1000 }, // 5 minutes
+  })
+);
 
+const sessionHandler = (req, res, next) => {
+  if (req.session.user) {
+    req.session._garbage = Date();
+    req.session.touch();
+  }
+  next();
+};
 
-
-// Read and parse the JSON service account key
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
-console.log('Firebase Credentials Path:', serviceAccountPath);
-
-// Initialize Firebase Admin SDK
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: storageBucket,
+// Routes
+app.post('/login', (req, res) => {
+  const token = "your-auth-token";
+  res.cookie("authToken", token, {
+    httpOnly: true, // Prevent client-side JavaScript from accessing the token
+    secure: false, // Set true in production (for HTTPS)
+    sameSite: "lax", // Helps with CSRF protection
+  });
+  res.send("Token set");
 });
 
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+};
 
-// Base route
-app.get('/', (req, res) => {
-  res.send('Server is running!');
+// Get the auth token
+const token = getCookie('authToken');
+console.log(token);
+app.get('/protected', sessionHandler, (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: 'Unauthorized. Please log in.' });
+  }
+  res.status(200).json({ message: 'Welcome to the protected route.' });
 });
 
-// Upload employee photo and data to Firestore
+app.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).json({ message: 'Logout failed' });
+    res.clearCookie('connect.sid');
+    res.status(200).json({ message: 'Logged out successfully' });
+  });
+});
+
+
+app.get('/session-test', (req, res) => {
+  req.session.user = { name: 'John Doe' };
+  res.send('Session created!');
+});
+
+app.get('/get-session', (req, res) => {
+  res.json(req.session.user || 'No session found');
+});
+
+
+// Add Employee
 app.post('/employees/add', upload.single('photo'), async (req, res) => {
   try {
     const { name, surname, age, idNumber, role, email, position, department, phone, startDate } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'No photo uploaded.' });
-    }
+    if (!req.file) return res.status(400).json({ error: 'No photo uploaded.' });
 
     const blob = bucket.file(Date.now() + extname(req.file.originalname));
     const blobStream = blob.createWriteStream({
@@ -73,89 +123,66 @@ app.post('/employees/add', upload.single('photo'), async (req, res) => {
       const photoUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
 
       await db.collection('employees').add({
-        name,
-        surname,
-        age,
-        idNumber,
-        role,
-        email,
-        position,
-        department,
-        phone,
-        startDate,
-       photo: photoUrl,
+        name, surname, age, idNumber, role, email, position, department, phone, startDate, photo: photoUrl,
       });
 
-      return res.status(201).json({ message: 'Employee added successfully' });
+      res.status(201).json({ message: 'Employee added successfully' });
     });
 
     blobStream.end(req.file.buffer);
   } catch (error) {
     console.error('Error adding employee:', error);
-    return res.status(500).json({ error: 'Failed to add employee.' });
+    res.status(500).json({ error: 'Failed to add employee.' });
   }
 });
 
-// Get employees
+// Get Employees
 app.get('/employees', async (req, res) => {
   try {
     const snapshot = await db.collection('employees').get();
     const employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return res.status(200).json(employees);
+    res.status(200).json(employees);
   } catch (error) {
     console.error('Error fetching employees:', error);
-    return res.status(500).json({ error: 'Failed to fetch employees.' });
+    res.status(500).json({ error: 'Failed to fetch employees.' });
   }
 });
 
-// Delete employee by ID
+// Delete Employee
 app.delete('/employees/delete/:id', async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const employeeRef = db.collection('employees').doc(id);
+    const employeeRef = db.collection('employees').doc(req.params.id);
     const doc = await employeeRef.get();
 
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Employee not found.' });
-    }
+    if (!doc.exists) return res.status(404).json({ error: 'Employee not found.' });
 
     await employeeRef.delete();
-    return res.status(200).json({ message: 'Employee deleted successfully' });
+    res.status(200).json({ message: 'Employee deleted successfully' });
   } catch (error) {
     console.error('Error deleting employee:', error);
-    return res.status(500).json({ error: 'Failed to delete employee.' });
+    res.status(500).json({ error: 'Failed to delete employee.' });
   }
 });
 
-// Update employee data in Firestore
+// Update Employee
 app.put('/employees/update/:id', upload.single('photo'), async (req, res) => {
-  const { id } = req.params;
-  const { name, surname, age, idNumber, role, email, position, department, phone, startDate } = req.body;
-
   try {
-    const employeeRef = db.collection('employees').doc(id);
+    const employeeRef = db.collection('employees').doc(req.params.id);
     const doc = await employeeRef.get();
 
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Employee not found.' });
-    }
+    if (!doc.exists) return res.status(404).json({ error: 'Employee not found.' });
 
-    let photoUrl = doc.data().photoUrl;
+    let photoUrl = doc.data().photo;
 
     if (req.file) {
       const blob = bucket.file(Date.now() + extname(req.file.originalname));
-      const blobStream = blob.createWriteStream({
-        resumable: false,
-        metadata: { contentType: req.file.mimetype },
-      });
-
       await new Promise((resolve, reject) => {
-        blobStream.on('error', err => {
-          console.error('Error uploading file:', err);
-          reject('Failed to upload photo.');
+        const blobStream = blob.createWriteStream({
+          resumable: false,
+          metadata: { contentType: req.file.mimetype },
         });
 
+        blobStream.on('error', err => reject(err));
         blobStream.on('finish', () => {
           photoUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
           resolve();
@@ -165,29 +192,14 @@ app.put('/employees/update/:id', upload.single('photo'), async (req, res) => {
       });
     }
 
-    await employeeRef.update({
-      name,
-      surname,
-      age,
-      idNumber,
-      role,
-      email,
-      position,
-      department,
-      phone,
-      startDate,
-      photoUrl,
-    });
-
-    return res.status(200).json({ message: 'Employee updated successfully' });
+    await employeeRef.update({ ...req.body, photo: photoUrl });
+    res.status(200).json({ message: 'Employee updated successfully' });
   } catch (error) {
     console.error('Error updating employee:', error);
-    return res.status(500).json({ error: 'Failed to update employee.' });
+    res.status(500).json({ error: 'Failed to update employee.' });
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Start Server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
